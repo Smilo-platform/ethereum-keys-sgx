@@ -1,8 +1,9 @@
 # __A Pure Rust Implementation of an Elliptic Curve Keypair Generator in an Intel SGX Enclave for Smilo Hybrid Blockchain__
+[![Gitter](https://badges.gitter.im/go-smilo/community.svg)](https://gitter.im/go-smilo/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 ## __:black_nib: Notes:__
 
-More specifically, an Secp256k1 key-pair generator & message/transaction signer where both the enclave _and_ the app are written in pure Rust. Made possible by the fantastic Rust SGX Software Developer Kit by Baidux Labs:
+More specifically, an Secp256k1 key-pair generator & message/transaction signer where both the enclave _and_ the app are written in pure Rust. Made possible by the fantastic Greg Kapka & Rust SGX Software Developer Kit by Baidux Labs:
 https://github.com/baidu/rust-sgx-sdk
 
 __Update #4:__ Now with a branch that can import private keys! (See the _**`import-secret`**_ branch...)
@@ -20,8 +21,9 @@ __Update #1:__ Now with replay-attack protection!
 <!-- Can I link to the actual usage file here so it updates on changes? -->
 
 ```
-    Intel SGX Ethereum Key Management CLI.
-        Questions: greg@oraclize.it
+Intel SGX Smilo Key Management CLI.
+    Copyright: 2018 Oraclize.it, 2019 smilo-keys-sgx Authors.
+    Questions: gitter.com/go-smilo/community
 
     Usage:  ethkey_sgx                                              [-h | --help]
     
@@ -57,23 +59,21 @@ __Update #1:__ Now with replay-attack protection!
 
         show nonce          ❍ Retrieves the current nonce of the keypair in a given keyfile, for
                             the network specified via the chain ID parameter:
-                                1  = Ethereum Main-Net (default)
-                                3  = Ropsten Test-Net
-                                4  = Rinkeby Test-Net
-                                42 = Kovan Test-Net
+                                20080914  = Smilo MainNet (default)
+                                10        = Smilo TestNet
 
         sign tx             ❍ Signs a transaction with the given parameters and returns the raw 
-                            data ready for broadcasting to the ethereum network. If no nonce is
+                            data ready for broadcasting to the smilo network. If no nonce is
                             supplied, the tool will attempt to discover the nonce of the given
                             keypair for the network the transaction is destined for. See below
                             for the parameter defaults.
 
         sendtx              ❍ Signs a transaction per the above instructions, then sends the 
-                            transaction to an Infura node for broadcasting to the chosen network.
+                            transaction to an Smilo node for broadcasting to the chosen network.
                             Returns the transactions hash if successful.
 
         sign msg            ❍ Signs a passed in message using key pair provided, otherwise uses
-                            default keypair if it exists. Defaults to using the ethereum message
+                            default keypair if it exists. Defaults to using the smilo message
                             prefix and ∴ signatures are ECRecoverable.
 
        verify               ❍ Verify a given address signed a given message with a given signature. 
@@ -89,7 +89,7 @@ __Update #1:__ Now with replay-attack protection!
 
         --to=<address>      ❍ Destination address of transaction [default: ]
 
-        --value=<Wei>       ❍ Amount of ether to send with transaction in Wei [default: 0]
+        --value=<Wei>       ❍ Amount of XSM to send with transaction in Wei [default: 0]
 
         --gaslimit=<uint>   ❍ Amount of gas to send with transaction [default: 210000]
 
@@ -101,7 +101,7 @@ __Update #1:__ Now with replay-attack protection!
 
         --data=<string>     ❍ Additional data to send with transaction [default:  ]
 
-        -n, --noprefix      ❍ Does not add the ethereum message prefix when signing or verifying 
+        -n, --noprefix      ❍ Does not add the smilo message prefix when signing or verifying 
                             a signed message. Messages signed with no prefix are NOT ECRecoverable!
 ```
 &nbsp;

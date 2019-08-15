@@ -6,21 +6,20 @@ use self::key::PublicKey;
 use ethereum_types::Address;
 use secp256k1::{Secp256k1, key};
 use std::io::{stdin, stdout, Write};
-use constants::{HEX_PREFIX, URL_PREFIX, URL_SUFFIX};
+use constants::{HEX_PREFIX, URL_PREFIX, URL_SUFFIX, URL_SUFFIX_TESTNET};
 
 type Result<T> = result::Result<T, AppError>;
 
 pub fn get_network_name(network_id: u8) -> String {
      match network_id {
-        3  => "ropsten",
-        4  => "rinkeby",
-        42 => "kovan",
-        _  => "mainnet"
+        10  => "testnet-wallet.smilo.network/api/",
+        20080914 => "api.smilo.network/",
+        _  => "api.smilo.network/"
     }.to_string()
 }
 
 pub fn get_infura_url(network_id: u8) -> String {
-   format!("{prefix}{network}{suffix}", prefix=URL_PREFIX, network=get_network_name(network_id), suffix=URL_SUFFIX)
+   format!("{prefix}{network}", prefix=URL_PREFIX, network=get_network_name(network_id))
 }
 
 pub fn keyfile_exists(path: &String) -> bool {

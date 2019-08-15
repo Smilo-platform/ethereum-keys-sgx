@@ -16,13 +16,13 @@ use self::utils::{keyfile_exists, get_affirmation};
 use ethkey_sgx_app::{
     transaction::Transaction,
     show_private_key,
-    generate_keypair, 
+    generate_keypair,
     send_transaction,
     sign_transaction,
     destroy_keypair,
-    get_eth_address, 
-    get_public_key, 
-    sign_message, 
+    get_eth_address,
+    get_public_key,
+    sign_message,
     get_nonce,
     verify,
     utils
@@ -31,16 +31,16 @@ use ethkey_sgx_app::{
 pub static DEFAULT_KEYPAIR_PATH: &'static str = "./encrypted_keypair.txt";
 
 static USAGE: &'static str = "
-Intel SGX Ethereum Key Management CLI.
-    Copyright: 2018 Oraclize.it
-    Questions: greg@oraclize.it
+Intel SGX Smilo Key Management CLI.
+    Copyright: 2018 Oraclize.it, 2019 smilo-keys-sgx developers
+    Questions: gitter.com/go-smilo
 
 Usage:  ethkey_sgx                                              [-h | --help]
         ethkey_sgx generate                                     [--keyfile=<path>]
         ethkey_sgx show public                                  [--keyfile=<path>]
         ethkey_sgx show secret                                  [--keyfile=<path>]
-        ethkey_sgx show address                                 [--keyfile=<path>] 
-        ethkey_sgx show nonce                                   [--keyfile=<path>] [--chainid=<uint>] 
+        ethkey_sgx show address                                 [--keyfile=<path>]
+        ethkey_sgx show nonce                                   [--keyfile=<path>] [--chainid=<uint>]
         ethkey_sgx verify <address> <message> <signature>       [--keyfile=<path>] [-n | --noprefix]
         ethkey_sgx destroy                                      [--keyfile=<path>]
         ethkey_sgx sendtx      [--to=<address>] [--value=<Wei>] [--keyfile=<path>] [--gaslimit=<uint>] [--gasprice=<Wei>] [--nonce=<uint>] [--data=<string>] [--chainid=<uint>]
@@ -56,26 +56,24 @@ Commands:
 
     show nonce          ❍ Retrieves the current nonce of the keypair in a given keyfile, for
                         the network specified via the chain ID parameter:
-                            1  = Ethereum Main-Net (default)
-                            3  = Ropsten Test-Net
-                            4  = Rinkeby Test-Net
-                            42 = Kovan Test-Net
+                            20080914 = Smilo MainNet (default)
+                            10 = Smilo TestNet
 
-    sign tx             ❍ Signs a transaction with the given parameters and returns the raw 
-                        data ready for broadcasting to the ethereum network. If no nonce is
+    sign tx             ❍ Signs a transaction with the given parameters and returns the raw
+                        data ready for broadcasting to the smilo network. If no nonce is
                         supplied, the tool will attempt to discover the nonce of the given
                         keypair for the network the transaction is destined for. See below
                         for the parameter defaults.
 
-    sendtx              ❍ Signs a transaction per the above instructions, then sends the 
-                        transaction to an Infura node for broadcasting to the chosen network.
+    sendtx              ❍ Signs a transaction per the above instructions, then sends the
+                        transaction to an Smilo node for broadcasting to the chosen network.
                         Returns the transactions hash if successful.
 
     sign msg            ❍ Signs a passed in message using key pair provided, otherwise uses
-                        default keypair if it exists. Defaults to using the ethereum message
+                        default keypair if it exists. Defaults to using the smilo message
                         prefix and ∴ signatures are ECRecoverable.
 
-   verify               ❍ Verify a given address signed a given message with a given signature. 
+   verify               ❍ Verify a given address signed a given message with a given signature.
 
    destroy              ❍ Destroys a given key file's monotonic counters, rendering the keyfile
                         unusable, before erasing the encrypted keyfile itself. Use with caution!
@@ -87,7 +85,7 @@ Options:
 
     --to=<address>      ❍ Destination address of transaction [default: ]
 
-    --value=<Wei>       ❍ Amount of ether to send with transaction in Wei [default: 0]
+    --value=<Wei>       ❍ Amount of XSM to send with transaction in Wei [default: 0]
 
     --gaslimit=<uint>   ❍ Amount of gas to send with transaction [default: 210000]
 
@@ -99,7 +97,7 @@ Options:
 
     --data=<string>     ❍ Additional data to send with transaction [default:  ]
 
-    -n, --noprefix      ❍ Does not add the ethereum message prefix when signing or verifying 
+    -n, --noprefix      ❍ Does not add the smilo message prefix when signing or verifying
                         a signed message. Messages signed with no prefix are NOT ECRecoverable!
 ";
 
@@ -135,7 +133,7 @@ struct Args {
  * TODO: Use MRENCLAVE to tie a sealed thingy to this specific enclave!
  * TODO: Make it not in debug mode!
  * TODO: Add option to verify msg signatures via the hash too?
- * TODO: Maybe break this file up a bit since it's getting unweildly. 
+ * TODO: Maybe break this file up a bit since it's getting unweildly.
  * TODO: Have a method to view the values of the mcs (should still increment the accesses obvs!)
  * */
 fn main() {
@@ -148,16 +146,16 @@ fn main() {
 fn execute(args: Args) -> () {
     match args {
         Args {cmd_show: true, ..}     => match_show(args),
-        Args {cmd_sign: true, ..}     => match_sign(args), 
+        Args {cmd_sign: true, ..}     => match_sign(args),
         Args {cmd_destroy: true, ..}  => destroy(args.flag_keyfile),
-        Args {cmd_generate: true, ..} => generate(args.flag_keyfile),    
+        Args {cmd_generate: true, ..} => generate(args.flag_keyfile),
         Args {cmd_sendtx: true, ..}   => send_tx(args.flag_keyfile.clone(), args.flag_nonce == -1, get_transaction_struct(args)),
         Args {cmd_verify: true, ..}   => verify(
-            &args.arg_address.parse().expect("Invalid ethereum address!"), 
+            &args.arg_address.parse().expect("Invalid smilo address!"),
             args.arg_message,
-            args.arg_signature, 
+            args.arg_signature,
             args.flag_noprefix
-        ),  
+        ),
         _ => println!("{}", USAGE)
     }
 }
@@ -174,7 +172,7 @@ fn match_show(args: Args) -> () {
 
 fn send_tx(path: String, query_nonce: bool, tx: Transaction) -> () {
     match send_transaction::run(path, query_nonce, tx.chain_id.clone(), tx) {
-        Ok(hash) => println!("[+] Infura response: {}", hash),// 0x{:02x}", hash), 
+        Ok(hash) => println!("[+] Smilo response: {}", hash),// 0x{:02x}", hash),
         Err(e)   => println!("[-] Error sending transaction:\n\t{:?}", e)
     }
 }
@@ -192,10 +190,10 @@ fn get_transaction_struct(args: Args) -> Transaction {
         args.flag_chainid,
         args.flag_data.into(),
         if args.flag_nonce != -1 {U256::from(args.flag_nonce)} else {U256::from(0)},
-        U256::from(args.flag_value), 
-        U256::from(args.flag_gaslimit), 
+        U256::from(args.flag_value),
+        U256::from(args.flag_gaslimit),
         U256::from(args.flag_gasprice),
-        if args.flag_to.len() == 0 {H160::zero()} else {args.flag_to.parse().expect("Invalid ethereum address!")},
+        if args.flag_to.len() == 0 {H160::zero()} else {args.flag_to.parse().expect("Invalid smilo address!")},
     )
 }
 
@@ -203,7 +201,7 @@ fn generate(path: String) -> () {
     match keyfile_exists(&path) {
         false => create_keypair(&path),
         true  => {
-            println!("[!] WARNING! Something already exists at {} and will be overwritten!", &path); 
+            println!("[!] WARNING! Something already exists at {} and will be overwritten!", &path);
             match get_affirmation("This cannot be undone!".to_string()) {
                 false => println!("[-] Affirmation not received, exiting."),
                 true  => create_keypair(&path)
@@ -216,7 +214,7 @@ fn destroy(path: String) -> () {
     match keyfile_exists(&path) {
         false => println!("[-] Cannot destroy key, no keyfile found at {}", &path),
         true  => {
-            println!("[!] WARNING! Key file at {} will be destroyed!", &path); 
+            println!("[!] WARNING! Key file at {} will be destroyed!", &path);
             match get_affirmation("This cannot be undone!".to_string()) {
                 false => println!("[-] Affirmation not received, exiting."),
                 true  => match destroy_keypair::run(&path) {
@@ -234,7 +232,7 @@ fn show_priv(path: String) -> () {
         true  => {
             match show_private_key::run(&path) {
                 Ok(_)  => (),
-                Err(e) => println!("[-] Error retreiving plaintext private key from {}:\n\t{:?}", &path, e)
+                Err(e) => println!("[-] Error retrieving plaintext private key from {}:\n\t{:?}", &path, e)
             }
         }
     }
@@ -248,8 +246,8 @@ fn create_keypair(path: &String) -> (){
 }
 
 fn sign_tx(path: String, query_nonce: bool, tx: Transaction) -> () {
-    match sign_transaction::run(path, query_nonce, tx) { 
-        Ok(sig) => println!("[+] Raw transaction signature: 0x{:02x}", sig.as_raw().iter().format("")), 
+    match sign_transaction::run(path, query_nonce, tx) {
+        Ok(sig) => println!("[+] Raw transaction signature: 0x{:02x}", sig.as_raw().iter().format("")),
         Err(e)  => println!("[-] Error signing transaction:\n\t{:?}", e)
     }
 }
@@ -258,7 +256,7 @@ fn sign_msg(path: String, message: String, no_prefix: bool) -> () {
     match sign_message::run(&path, message, no_prefix) {
         Err(e) => println!("[-] Error signing message with key from {}:\n\t{:?}", &path, e),
         Ok(k)  => {
-            match no_prefix { 
+            match no_prefix {
                 true  => println!("[+] Message signature (no prefix): 0x{:02x}", k.iter().format("")),
                 false => println!("[+] Message signature (with prefix): 0x{:02x}", k.iter().format(""))
             }
@@ -269,21 +267,21 @@ fn sign_msg(path: String, message: String, no_prefix: bool) -> () {
 fn show_pub(path: String) -> () {
     match get_public_key::run(&path) {
         Ok(k)  => println!("[+] {:?}", k),
-        Err(e) => println!("[-] Error retreiving plaintext public key from {}:\n\t{:?}", &path, e)
+        Err(e) => println!("[-] Error retrieving plaintext public key from {}:\n\t{:?}", &path, e)
     }
 }
 
 fn show_addr(path: String) -> () {
     match get_eth_address::run(&path) {
-        Ok(a)  => println!("[+] Ethereum Address: {:#x}", a),
-        Err(e) => println!("[-] Error retreiving Ethereum Address from: {}:\n\t{:?}", &path, e)
+        Ok(a)  => println!("[+] Smilo Address: {:#x}", a),
+        Err(e) => println!("[-] Error retrieving Smilo Address from: {}:\n\t{:?}", &path, e)
     }
 }
 
 fn show_nonce(path: String, network_id: u8) -> () {
     match get_nonce::run(&path, network_id) {
         Ok(n)  => println!("[+] Encrypted keyfile's last confirmed nonce on {network} is {nonce}", nonce = n, network = get_network_name(network_id)),
-        Err(e) => println!("[-] Error retreiving Ethereum Address from: {}:\n\t{:?}", &path, e)
+        Err(e) => println!("[-] Error retrieving Smilo Address from: {}:\n\t{:?}", &path, e)
     }
 }
 
@@ -292,8 +290,8 @@ fn verify(address: &Address, message: String, signature: String, no_prefix: bool
         Err(e) => println!("[-] Error verifying signature: {}", e),
         Ok(b)  => {
             match b {
-                true  => println!("[+] Signature verified! Message was signed with Ethereum Address: {}", address),
-                false => println!("[!] Signature verification failed. Message was NOT signed with Ethereum Address: {}", address)
+                true  => println!("[+] Signature verified! Message was signed with Smilo Address: {}", address),
+                false => println!("[!] Signature verification failed. Message was NOT signed with Smilo Address: {}", address)
             }
         }
     }
