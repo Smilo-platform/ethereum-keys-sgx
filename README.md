@@ -1,4 +1,4 @@
-# __A Pure Rust Implementation of an Elliptic Curve Keypair Generator in an Intel SGX Enclave__
+# __A Pure Rust Implementation of an Elliptic Curve Keypair Generator in an Intel SGX Enclave for Smilo Hybrid Blockchain__
 
 ## __:black_nib: Notes:__
 
